@@ -1,38 +1,16 @@
-import { json, Router } from "express";
+import { Router } from "express";
+import {
+  getAllProducts,
+  createProduct,
+  updateProduct,
+} from "../controllers/product.controller.js";
 
 const productRouter = Router();
 
-productRouter.get("/", (req, res) => {
-  res
-    .status(200)
-    .json({
-      success: true,
-      messaje: "Lista de productos",
-      data: [],
-      errors: [],
-    });
-});
+productRouter.get("/", getAllProducts);
 
-productRouter.post("/", (req, res) => {
-  res
-    .status(201)
-    .json({
-      success: true,
-      messaje: "Producto creado correctamente",
-      data: [],
-      errors: [],
-    });
-});
+productRouter.post("/", createProduct);
 
-productRouter.put("/:id", (req, res) => {
-  res
-    .status(200)
-    .json({
-      success: true,
-      messaje: "Producto actualizado correctamente",
-      data: [],
-      errors: [],
-    });
-});
+productRouter.put("/:id", updateProduct);
 
 export default productRouter;
