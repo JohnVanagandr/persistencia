@@ -9,6 +9,13 @@ export const ProductModel = {
     return productsData.find((p) => p.id === id);
   },
 
+  // NUEVO MÉTODO: Búsqueda relacional
+  findByCategoryId: (categoryId) => {
+    // Usamos .filter() porque una categoría puede tener MUCHOS productos
+    // Retorna un arreglo (vacío si no hay coincidencias, o con los productos encontrados)
+    return productsData.filter((p) => p.categoryId === categoryId);
+  },
+
   create: (newProduct) => {
     const id = productsData.length + 1;
     const productWithId = { id, ...newProduct };
