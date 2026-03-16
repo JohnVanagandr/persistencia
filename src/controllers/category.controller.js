@@ -1,23 +1,22 @@
 import { CategoryModel } from "../models/category.model.js";
 // Mantenemos el modelo de productos para las relaciones (pronto lo haremos asíncrono también)
 import { ProductModel } from "../models/product.model.js";
+import { successResponse } from "../utils/response.handler.js";
 
-const getAllCategories = async (req, res) => {
+const getAllCategories = async (req, res, nex) => {
   try {
     const categories = await CategoryModel.findAll();
-    res.status(200).json({
-      success: true,
-      message: "Lista de categorías",
-      data: categories,
-      errors: [],
-    });
+    // Retornamos la respuesta desde el manejador
+    return successResponse(res, 200, "Lista de categorías", categories);
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Error interno del servidor al obtener las categorías",
-      data: [],
-      errors: [error.message],
-    });
+    // res.status(500).json({
+    //   success: false,
+    //   message: "Error interno del servidor al obtener las categorías",
+    //   data: [],
+    //   errors: [error.message],
+    // });
+    // Le pasamos el error a nuestro "peaje" global (el middleware)
+    next(error);
   }
 };
 
