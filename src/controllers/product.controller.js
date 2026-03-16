@@ -26,17 +26,7 @@ const getProductById = catchAsync(async (req, res, next) => {
 });
 
 const createProduct = catchAsync(async (req, res, next) => {
-  // Asegúrate de que los aprendices incluyan 'price' aquí
   const { name, categori_id, price } = req.body;
-
-  if (!name || !categori_id || price === undefined) {
-    const error = new Error(
-      "El nombre, el ID de la categoría (categori_id) y el precio son obligatorios",
-    );
-    error.statusCode = 400; // Bad Request
-    return next(error);
-  }
-
   const newProduct = await ProductModel.create({ name, categori_id, price });
   return successResponse(res, 201, "Producto creado correctamente", newProduct);
 });
@@ -44,13 +34,12 @@ const createProduct = catchAsync(async (req, res, next) => {
 const updateProduct = catchAsync(async (req, res, next) => {
   const { id } = req.params;
   const updatedProduct = await ProductModel.update(Number(id), req.body);
-
+  // Solo validamos que el producto realmente existiera en MySQL
   if (!updatedProduct) {
     const error = new Error(`Producto con ID ${id} no encontrado`);
     error.statusCode = 404;
     return next(error);
   }
-
   return successResponse(
     res,
     200,

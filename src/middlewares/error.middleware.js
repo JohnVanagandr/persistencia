@@ -1,17 +1,14 @@
 import { errorResponse } from "../utils/response.handler.js";
 
-// Express sabe que es un Middleware de Error porque tiene exactamente 4 parámetros (err, req, res, next)
 export const globalErrorHandler = (err, req, res, next) => {
-  console.error("Error capturado globalmente:", err.message);
-
-  // Si el error trae su propio código (ej. 404), lo usamos. Si no, asumimos que el servidor falló (500)
   const statusCode = err.statusCode || 500;
+  // El mensaje principal (ej. "Error de validación en los datos enviados")
+  const message = err.message || "Error interno del servidor";
 
-  // Mensaje amigable para el cliente
-  const message = err.isOperational
-    ? err.message
-    : "Error interno del servidor";
+  // Si el error trae su propio arreglo detallado de errores (como los de Zod), lo usamos.
+  // Si no trae nada, simplemente metemos el mensaje principal en un arreglo.
+  const detailedErrors = err.errors || [err.message];
 
-  // Enviamos la respuesta usando nuestra utilidad estandarizada
-  return errorResponse(res, statusCode, message, err.message);
+  // Le pasamos todo a nuestro estandarizador de respuestas
+  return errorResponse(res, statusCode, message, detailedErrors);
 };

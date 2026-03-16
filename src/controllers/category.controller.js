@@ -30,13 +30,6 @@ const getCategoryById = catchAsync(async (req, res, next) => {
 
 const createCategory = catchAsync(async (req, res, next) => {
   const { name } = req.body;
-
-  if (!name) {
-    const error = new Error("El nombre de la categoría es obligatorio");
-    error.statusCode = 400;
-    return next(error);
-  }
-
   const newCategory = await CategoryModel.create({ name });
   return successResponse(
     res,
@@ -49,13 +42,11 @@ const createCategory = catchAsync(async (req, res, next) => {
 const updateCategory = catchAsync(async (req, res, next) => {
   const { id } = req.params;
   const updatedCategory = await CategoryModel.update(Number(id), req.body);
-
   if (!updatedCategory) {
     const error = new Error(`Categoría con ID ${id} no encontrada`);
     error.statusCode = 404;
     return next(error);
   }
-
   return successResponse(
     res,
     200,

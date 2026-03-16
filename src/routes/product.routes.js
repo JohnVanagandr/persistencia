@@ -7,15 +7,18 @@ import {
   deleteProduct,
 } from "../controllers/product.controller.js";
 
+import { validateSchema } from "../middlewares/validator.middleware.js";
+import { productSchema } from "../schemas/product.schema.js";
+
 const productRouter = Router();
 
 productRouter.get("/", getAllProducts);
 
 productRouter.get("/:id", getProductById);
 
-productRouter.post("/", createProduct);
+productRouter.post("/", validateSchema(productSchema), createProduct);
 
-productRouter.put("/:id", updateProduct);
+productRouter.put("/:id", validateSchema(productSchema), updateProduct);
 
 productRouter.delete("/:id", deleteProduct);
 
