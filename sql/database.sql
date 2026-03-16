@@ -36,3 +36,6 @@ CREATE TABLE products (
     ON DELETE RESTRICT 
     ON UPDATE CASCADE
 );
+
+-- 8. Modificamos la tabla productos para poder almacenar los precios
+ALTER TABLE products ADD COLUMN price DECIMAL(10, 2) AFTER name;
