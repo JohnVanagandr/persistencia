@@ -1,192 +1,113 @@
 import { CategoryModel } from "../models/category.model.js";
-// Mantenemos el modelo de productos para las relaciones (pronto lo haremos asíncrono también)
 import { ProductModel } from "../models/product.model.js";
+import { catchAsync } from "../utils/catchAsync.js";
 import { successResponse } from "../utils/response.handler.js";
 
-const getAllCategories = async (req, res, nex) => {
-  try {
-    const categories = await CategoryModel.findAll();
-    // Retornamos la respuesta desde el manejador
-    return successResponse(res, 200, "Lista de categorías", categories);
-  } catch (error) {
-    // res.status(500).json({
-    //   success: false,
-    //   message: "Error interno del servidor al obtener las categorías",
-    //   data: [],
-    //   errors: [error.message],
-    // });
-    // Le pasamos el error a nuestro "peaje" global (el middleware)
-    next(error);
+// Envolvemos toda la función en catchAsync()
+const getAllCategories = catchAsync(async (req, res) => {
+  const categories = await CategoryModel.findAll();
+  return successResponse(res, 200, "Lista de categorías", categories);
+});
+
+const getCategoryById = catchAsync(async (req, res, next) => {
+  const { id } = req.params;
+  const category = await CategoryModel.findById(Number(id));
+
+  if (!category) {
+    // Si no existe, creamos un error personalizado y lo enviamos al middleware
+    const error = new Error(`Categoría con ID ${id} no encontrada`);
+    error.statusCode = 404;
+    return next(error);
   }
-};
 
-const getCategoryById = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const category = await CategoryModel.findById(Number(id));
+  return successResponse(
+    res,
+    200,
+    "Categoría encontrada correctamente",
+    category,
+  );
+});
 
-    if (!category) {
-      return res.status(404).json({
-        success: false,
-        message: `Categoría con ID ${id} no encontrada`,
-        data: [],
-        errors: [],
-      });
-    }
-    res.status(200).json({
-      success: true,
-      message: "Categoría encontrada correctamente",
-      data: category,
-      errors: [],
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Error interno al buscar la categoría",
-      data: [],
-      errors: [error.message],
-    });
+const createCategory = catchAsync(async (req, res, next) => {
+  const { name } = req.body;
+
+  if (!name) {
+    const error = new Error("El nombre de la categoría es obligatorio");
+    error.statusCode = 400;
+    return next(error);
   }
-};
 
-const createCategory = async (req, res) => {
-  try {
-    const { name } = req.body;
+  const newCategory = await CategoryModel.create({ name });
+  return successResponse(
+    res,
+    201,
+    "Categoría creada correctamente",
+    newCategory,
+  );
+});
 
-    if (!name) {
-      return res.status(400).json({
-        success: false,
-        message: "El nombre de la categoría es obligatorio",
-        data: [],
-        errors: [],
-      });
-    }
+const updateCategory = catchAsync(async (req, res, next) => {
+  const { id } = req.params;
+  const updatedCategory = await CategoryModel.update(Number(id), req.body);
 
-    const newCategory = await CategoryModel.create({ name });
-    res.status(201).json({
-      success: true,
-      message: "Categoría creada correctamente",
-      data: newCategory,
-      errors: [],
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Error interno al crear la categoría",
-      data: [],
-      errors: [error.message],
-    });
+  if (!updatedCategory) {
+    const error = new Error(`Categoría con ID ${id} no encontrada`);
+    error.statusCode = 404;
+    return next(error);
   }
-};
 
-const updateCategory = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const updatedCategory = await CategoryModel.update(Number(id), req.body);
+  return successResponse(
+    res,
+    200,
+    "Categoría actualizada correctamente",
+    updatedCategory,
+  );
+});
 
-    if (!updatedCategory) {
-      return res.status(404).json({
-        success: false,
-        message: `Categoría con ID ${id} no encontrada`,
-        data: [],
-        errors: [],
-      });
-    }
-    res.status(200).json({
-      success: true,
-      message: "Categoría actualizada correctamente",
-      data: updatedCategory,
-      errors: [],
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Error interno al actualizar la categoría",
-      data: [],
-      errors: [error.message],
-    });
+// RETO DE INTEGRIDAD
+const deleteCategory = catchAsync(async (req, res, next) => {
+  const { id } = req.params;
+
+  const categoryExists = await CategoryModel.findById(Number(id));
+  if (!categoryExists) {
+    const error = new Error(
+      `No se pudo eliminar: Categoría con ID ${id} no encontrada`,
+    );
+    error.statusCode = 404;
+    return next(error);
   }
-};
 
-// RETO DE INTEGRIDAD CON ASYNC/AWAIT
-const deleteCategory = async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    // 1. Verificamos si la categoría existe
-    const categoryExists = await CategoryModel.findById(Number(id));
-    if (!categoryExists) {
-      return res.status(404).json({
-        success: false,
-        message: `No se pudo eliminar: Categoría con ID ${id} no encontrada`,
-        data: [],
-        errors: [],
-      });
-    }
-
-    // 2. Regla de Negocio: Validamos dependencias
-    // (Añadimos 'await' anticipando que el ProductModel también será refactorizado a BD)
-    const linkedProducts = await ProductModel.findByCategoryId(Number(id));
-    if (linkedProducts && linkedProducts.length > 0) {
-      return res.status(409).json({
-        success: false,
-        message:
-          "No se puede eliminar la categoría porque tiene al menos un recurso vinculado",
-        data: [],
-        errors: [],
-      });
-    }
-
-    // 3. Procedemos a eliminar
-    const isDeleted = await CategoryModel.delete(Number(id));
-    res.status(200).json({
-      success: true,
-      message: "Categoría eliminada correctamente",
-      data: [],
-      errors: [],
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: `Error al intentar eliminar la categoría`,
-      data: [],
-      errors: [error.message],
-    });
+  const linkedProducts = await ProductModel.findByCategoryId(Number(id));
+  if (linkedProducts && linkedProducts.length > 0) {
+    const error = new Error(
+      "No se puede eliminar la categoría porque tiene recursos vinculados",
+    );
+    error.statusCode = 409;
+    return next(error);
   }
-};
 
-// RUTA RELACIONAL ASÍNCRONA
-const getProductsByCategory = async (req, res) => {
-  try {
-    const { id } = req.params;
+  await CategoryModel.delete(Number(id));
+  return successResponse(res, 200, "Categoría eliminada correctamente");
+});
 
-    const categoryExists = await CategoryModel.findById(Number(id));
-    if (!categoryExists) {
-      return res.status(404).json({
-        success: false,
-        message: `La categoría con ID ${id} no existe`,
-        data: [],
-        errors: [],
-      });
-    }
+const getProductsByCategory = catchAsync(async (req, res, next) => {
+  const { id } = req.params;
 
-    // Añadimos 'await' preparando el terreno para el ProductModel
-    const products = await ProductModel.findByCategoryId(Number(id));
-    res.status(200).json({
-      success: true,
-      message: `Productos de la categoría: ${categoryExists.name}`,
-      data: products,
-      errors: [],
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Error al buscar los productos de la categoría",
-      data: [],
-      errors: [error.message],
-    });
+  const categoryExists = await CategoryModel.findById(Number(id));
+  if (!categoryExists) {
+    const error = new Error(`La categoría con ID ${id} no existe`);
+    error.statusCode = 404;
+    return next(error);
   }
-};
+
+  const products = await ProductModel.findByCategoryId(Number(id));
+  return successResponse(
+    res,
+    200,
+    `Productos de la categoría: ${categoryExists.name}`,
+    products,
+  );
+});
 
 export {
   getAllCategories,
